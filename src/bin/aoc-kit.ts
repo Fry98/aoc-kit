@@ -22,7 +22,7 @@ interface Submission {
   solved: boolean;
 }
 
-const cacheDir = path.join(os.homedir(), '.aocli');
+const cacheDir = path.join(os.homedir(), '.aockit');
 const submission: Submission = { value: '', solved: false };
 
 if (!fs.existsSync(cacheDir)) {
@@ -73,7 +73,7 @@ function logout() {
 function clearAll() {
   try {
     fs.rmSync(cacheDir, { recursive: true, force: true });
-    console.log('✔️ All aocli data cleared');
+    console.log('✔️ All aoc-kit data cleared');
   } catch {
     throw new Error('Unable to clear the cache');
   }
@@ -388,7 +388,7 @@ function getSessionToken() {
   }
 
   if (token === null)
-    throw new Error(`You don't seem to be logged in\n(Run 'aocli login [session_token]' to log in)`);
+    throw new Error(`You don't seem to be logged in\n(Run 'aoc-kit login [session_token]' to log in)`);
 
   return token;
 }
