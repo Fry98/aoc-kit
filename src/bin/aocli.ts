@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import os from 'os';
+import { URLSearchParams } from 'url';
 import axios from 'axios';
 import process from "process";
 import path from "path";
 import cheerio from 'cheerio';
+import { LOADIPHLPAPI } from 'dns';
 
 interface Config {
   year: number;
@@ -15,7 +17,14 @@ interface Config {
   input: string;
 }
 
+interface Submission {
+  value: string;
+  solved: boolean;
+}
+
 const cacheDir = path.join(os.homedir(), '.aocli');
+const submission: Submission = { value: '', solved: false };
+
 if (!fs.existsSync(cacheDir)) {
   fs.mkdirSync(cacheDir);
 }
@@ -42,7 +51,7 @@ const [,, cmd, ...args] = process.argv;
         throw new Error(`Unknown command '${cmd}'`);
     }
   } catch (e) {
-    console.error(`❌  ${e.message}`);
+    console.error(`❌ ${e.message}`);
   }
 })();
 
@@ -89,7 +98,6 @@ async function login() {
 
   try {
     const configPath = path.join(cacheDir, 'session');
-    console.log(configPath);
     fs.writeFileSync(configPath, args[0], 'utf-8');
   } catch {
     throw new Error('Unable to save user configuration');
@@ -158,11 +166,25 @@ async function execute() {
     }
   }
 
+  if (cmd === 'submit') {
+    if (config.input)
+      throw new Error('You cannot submit your solution while using a custom input file');
+
+    if (config.example)
+      throw new Error('You cannot submit your solution while using the example input');
+  }
+
   if (config.day === -1)
     throw new Error('Day has not been specified');
 
+  if (config.day < 1 || config.day > 25)
+    throw new Error(`Day ${config.day} is invalid`);
+
   if (config.part === -1)
     throw new Error('Part has not been specified');
+
+  if (config.part < 1 || config.part > 2)
+    throw new Error(`Part ${config.part} is invalid`);
 
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
   const year = now.getFullYear();
@@ -172,7 +194,7 @@ async function execute() {
   if (config.year < 2015 || config.year > latestYear)
     throw new Error(`Year ${config.year} is not valid`);
 
-  let input: string | string[];
+  let input: string;
   if (cmd === 'submit') {
     input = await fetchInput(config);
   } else {
@@ -184,8 +206,62 @@ async function execute() {
   }
 
   input = input.trim();
-  if (config.lines) input = input.split('\n');
-  await solution(input, solve);
+  await solution(config.lines ? input.split('\n') : input, solve);
+
+  if (!submission.solved)
+    throw new Error('Your module has to call the solve() method');
+
+  console.log('✔️  Solution module successfully executed')
+  console.log(`▶️  Your answer: ${submission.value}`);
+  if (cmd === 'submit') await submit(config);
+}
+
+async function submit(config: Config) {
+  console.log('------------------------------------------');
+  const token = getSessionToken();
+  const params = new URLSearchParams({
+    level: config.part.toString(),
+    answer: submission.value
+  });
+
+  let $: ReturnType<typeof cheerio.load>;
+  try {
+    const { data } = await axios({
+      method: 'POST',
+      url: `https://adventofcode.com/${config.year}/day/${config.day}/answer`,
+      headers: { cookie: `session=${token}` },
+      data: params.toString()
+    });
+
+    $ = cheerio.load(data);
+  } catch {
+    throw new Error('Solution submission failed');
+  }
+
+  const resp = $('main > article > p').first().text().trim().toLowerCase();
+  if (resp.includes('one gold star closer')) {
+    console.log('✔️  Solution successfully submitted');
+    console.log('✔️  Your answer was CORRECT\n');
+    console.log(`🎉 PART ${config.part} OF DAY ${config.day} OF ${config.year} COMPLETED 🎉`);
+  } else if (resp.includes('already complete it')) {
+    console.log("❌ Either you have already completed this task or you haven't unlocked it yet");
+  } else if (resp.includes('too low')) {
+    console.log('✔️  Solution successfully submitted');
+    console.log('❌ Your answer was INCORRECT (too low)');
+  } else if (resp.includes('too high')) {
+    console.log('✔️  Solution successfully submitted');
+    console.log('❌ Your answer was INCORRECT (too high)');
+  } else if (resp.includes('not the right answer')) {
+    console.log('✔️  Solution successfully submitted');
+    console.log('❌ Your answer was INCORRECT');
+  } else if (resp.includes('answer too recently')) {
+    console.log('❌ You submitted an answer too recently');
+
+    const secs = Number((resp.match(/you have ([0-9]+)s left/i) ?? [])[1]);
+    if (!Number.isNaN(secs)) console.log(`(Wait ${secs}s before resubmitting)`);
+  } else {
+    console.error("❌ Unable to parse the server's response");
+  }
 }
 
 function loadCustom(config: Config): string {
@@ -194,21 +270,32 @@ function loadCustom(config: Config): string {
     inputPath = path.join(process.cwd(), inputPath);
 
   if (!fs.existsSync(inputPath))
-    throw new Error(`Unable to load input file '${config.input}'`);
+    throw new Error(`Input file '${config.input}' doesn't exist`);
 
-  return fs.readFileSync(inputPath, 'utf8');
+  let data: string;
+  try {
+    data = fs.readFileSync(inputPath, 'utf8');
+  } catch {
+    throw new Error(`Unable to read file '${config.input}'`);
+  }
+
+  console.log(`✔️  Input (custom) loaded from file '${config.input}'`);
+  return data;
 }
 
 async function fetchExample(config: Config): Promise<string> {
   const cached = checkCache(config);
-  if (cached) return cached;
+  if (cached) {
+    console.log('✔️  Input (example) loaded from cache');
+    return cached;
+  }
 
   let $: ReturnType<typeof cheerio.load>;
   try {
     const { data } = await axios(`https://adventofcode.com/${config.year}/day/${config.day}`);
     $ = cheerio.load(data);
   } catch {
-    throw new Error(`Unable to load example for day ${config.day} in ${config.year}`);
+    throw new Error(`Unable to load example for day ${config.day} of ${config.year}`);
   }
 
   const codeEl = $('pre > code').filter((_, el) => {
@@ -222,12 +309,16 @@ async function fetchExample(config: Config): Promise<string> {
   const example = codeEl.first().text().trim();
   cache(example, config);
 
+  console.log('✔️  Input (example) fetched from network');
   return example;
 }
 
 async function fetchInput(config: Config): Promise<string> {
   const cached = checkCache(config);
-  if (cached) return cached;
+  if (cached) {
+    console.log('✔️  Input loaded from cache');
+    return cached;
+  }
 
   const token = getSessionToken();
   try {
@@ -238,9 +329,10 @@ async function fetchInput(config: Config): Promise<string> {
     });
 
     cache(data, config);
+    console.log('✔️  Input fetched from network');
     return data;
   } catch {
-    throw new Error('Unable to fetch your task input');
+    throw new Error(`Unable to load input for day ${config.day} of ${config.year}`);
   }
 }
 
@@ -269,11 +361,22 @@ function clearCache() {
   }
 }
 
-function solve(output: string) {
+function solve(output: string | number) {
+  if (typeof output === 'number')
+    output = `${output}`;
 
+  if (typeof output !== 'string')
+    throw new Error(`Output of type '${typeof output}' is not a valid solution`);
+
+  if (submission.solved)
+    throw new Error('Cannot call the solve() method multiple times');
+
+  submission.value = output;
+  submission.solved = true;
 }
 
 function getSessionToken() {
+
   let token: string | null = null;
   const configPath = path.join(cacheDir, 'session');
 
@@ -284,7 +387,7 @@ function getSessionToken() {
   }
 
   if (token === null)
-    throw new Error(`You don't seem to be logged in\nRun 'aocli login [session_token]' to log in`);
+    throw new Error(`You don't seem to be logged in\n(Run 'aocli login [session_token]' to log in)`);
 
   return token;
 }
