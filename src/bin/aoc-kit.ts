@@ -6,15 +6,8 @@ import axios from 'axios';
 import process from "process";
 import path from "path";
 import cheerio from 'cheerio';
-
-interface Config {
-  year: number;
-  day: number;
-  part: number;
-  example: boolean;
-  lines: boolean;
-  input: string;
-}
+import pc from 'picocolors';
+import { Config } from '../types/config';
 
 interface Submission {
   value: string;
@@ -27,6 +20,13 @@ const submission: Submission = { value: '', solved: false };
 if (!fs.existsSync(cacheDir)) {
   fs.mkdirSync(cacheDir);
 }
+
+const [emX, emTick, emArr, emStar] = [
+  pc.bold(pc.red('X')),
+  pc.bold(pc.green('√')),
+  pc.bold(pc.blue('►')),
+  pc.bold(pc.yellow('✶'))
+];
 
 const [,, cmd, ...args] = process.argv;
 (async () => {
@@ -50,7 +50,7 @@ const [,, cmd, ...args] = process.argv;
         throw Error(`Unknown command '${cmd}'`);
     }
   } catch (e) {
-    console.error(`❌ ${e.message}`);
+    console.error(emX, `${e.message}`);
     if (e.cause) throw e.cause;
   }
 })();
@@ -67,13 +67,13 @@ function logout() {
   }
 
   clearCache();
-  console.log('✔️ User successfully logged out');
+  console.log(emTick, 'User successfully logged out');
 }
 
 function clearAll() {
   try {
     fs.rmSync(cacheDir, { recursive: true, force: true });
-    console.log('✔️ All aoc-kit data cleared');
+    console.log(emTick, 'All aoc-kit data cleared');
   } catch {
     throw Error('Unable to clear the cache');
   }
@@ -104,7 +104,7 @@ async function login() {
   }
 
   clearCache();
-  console.log('✔️ User successfully logged in');
+  console.log(emTick, 'User successfully logged in');
 }
 
 async function execute() {
@@ -206,18 +206,19 @@ async function execute() {
   }
 
   input = input.trim();
-  console.log('✔️ Solution module loaded');
+  console.log(emTick, 'Solution module loaded');
 
   try {
-    await solution(config.lines ? input.split('\n') : input, solve);
+    if (config.input?.length === 0) config.input = null;
+    await solution(config.lines ? input.split('\n') : input, solve, config);
   } catch (err) {
     throw Error('An error occured within your module:', { cause: err });
   }
 
   if (!submission.solved)
-    throw Error('Your module has to call the solve() method');
+    throw Error(`Your module has to call the ${pc.magenta(pc.bold('solve()'))} method`);
 
-  console.log(`▶️ Your answer: ${submission.value}`);
+  console.log(emArr, `Your answer: ${submission.value}`);
   if (cmd === 'submit') await submit(config);
 }
 
@@ -245,32 +246,32 @@ async function submit(config: Config) {
 
   const resp = $('main > article > p').first().text().trim().toLowerCase();
   if (resp.includes('one gold star closer')) {
-    console.log('✔️ Solution successfully submitted');
-    console.log('✔️ Your answer was CORRECT\n');
-    console.log(`🎉 DAY ${config.day} (Part ${config.part}) OF ${config.year} COMPLETED 🎉`);
+    console.log(emTick, 'Solution successfully submitted');
+    console.log(emTick, 'Your answer was CORRECT\n');
+    console.log(emStar, `DAY ${config.day} (Part ${config.part}) OF ${config.year} COMPLETED`, emStar);
   } else if (resp.includes('already complete it')) {
-    console.log("❌ Either you have already completed this task or you haven't unlocked it yet");
+    console.log(emX, "Either you have already completed this task or you haven't unlocked it yet");
   } else if (resp.includes('too low')) {
-    console.log('✔️ Solution successfully submitted');
-    console.log('❌ Your answer was INCORRECT (too low)');
+    console.log(emTick, 'Solution successfully submitted');
+    console.log(emX, 'Your answer was INCORRECT (too low)');
   } else if (resp.includes('too high')) {
-    console.log('✔️ Solution successfully submitted');
-    console.log('❌ Your answer was INCORRECT (too high)');
+    console.log(emTick, 'Solution successfully submitted');
+    console.log(emX, 'Your answer was INCORRECT (too high)');
   } else if (resp.includes('not the right answer')) {
-    console.log('✔️ Solution successfully submitted');
-    console.log('❌ Your answer was INCORRECT');
+    console.log(emTick, 'Solution successfully submitted');
+    console.log(emX, 'Your answer was INCORRECT');
   } else if (resp.includes('answer too recently')) {
-    console.log('❌ You submitted an answer too recently');
+    console.log(emX, 'You submitted an answer too recently');
 
     const secs = Number((resp.match(/you have ([0-9]+)s left/i) ?? [])[1]);
     if (!Number.isNaN(secs)) console.log(`(Wait ${secs}s before resubmitting)`);
   } else {
-    console.error("❌ Unable to parse the server's response");
+    console.error(emX, "Unable to parse the server's response");
   }
 }
 
 function loadCustom(config: Config): string {
-  let inputPath = config.input;
+  let inputPath = config.input!;
   if (!path.isAbsolute(inputPath))
     inputPath = path.join(process.cwd(), inputPath);
 
@@ -284,14 +285,14 @@ function loadCustom(config: Config): string {
     throw Error(`Unable to read file '${config.input}'`);
   }
 
-  console.log(`✔️ Input (custom) loaded from file '${config.input}'`);
+  console.log(emTick, `Input (custom) loaded from file '${config.input}'`);
   return data;
 }
 
 async function fetchExample(config: Config): Promise<string> {
   const cached = checkCache(config);
   if (cached) {
-    console.log('✔️ Input (example) loaded from cache');
+    console.log(emTick, 'Input (example) loaded from cache');
     return cached;
   }
 
@@ -314,14 +315,14 @@ async function fetchExample(config: Config): Promise<string> {
   const example = codeEl.first().text().trim();
   cache(example, config);
 
-  console.log('✔️ Input (example) fetched from network');
+  console.log(emTick, 'Input (example) fetched from network');
   return example;
 }
 
 async function fetchInput(config: Config): Promise<string> {
   const cached = checkCache(config);
   if (cached) {
-    console.log('✔️ Input loaded from cache');
+    console.log(emTick, 'Input loaded from cache');
     return cached;
   }
 
@@ -334,7 +335,7 @@ async function fetchInput(config: Config): Promise<string> {
     });
 
     cache(data, config);
-    console.log('✔️ Input fetched from network');
+    console.log(emTick, 'Input fetched from network');
     return data;
   } catch {
     throw Error(`Unable to load input for day ${config.day} of ${config.year}`);
