@@ -1,0 +1,22 @@
+{
+  "name": "aocli",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "aocli": "dist/bin/aocli.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/cheerio": "^0.22.31",
+    "@types/node": "^18.11.12",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "axios": "^1.2.1",
+    "cheerio": "0.22.0"
+  }
+}
