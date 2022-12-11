@@ -6,7 +6,6 @@ import axios from 'axios';
 import process from "process";
 import path from "path";
 import cheerio from 'cheerio';
-import { LOADIPHLPAPI } from 'dns';
 
 interface Config {
   year: number;
@@ -32,7 +31,7 @@ if (!fs.existsSync(cacheDir)) {
 const [,, cmd, ...args] = process.argv;
 (async () => {
   try {
-    if (!cmd) throw new Error('No command specified');
+    if (!cmd) throw Error('No command specified');
     switch (cmd) {
       case 'run':
       case 'submit':
@@ -48,22 +47,23 @@ const [,, cmd, ...args] = process.argv;
         clearAll();
         break;
       default:
-        throw new Error(`Unknown command '${cmd}'`);
+        throw Error(`Unknown command '${cmd}'`);
     }
   } catch (e) {
     console.error(`❌ ${e.message}`);
+    if (e.cause) throw e.cause;
   }
 })();
 
 function logout() {
   const sessPath = path.join(cacheDir, 'session');
   if (!fs.existsSync(sessPath))
-    throw new Error("You don't seem to be logged in");
+    throw Error("You don't seem to be logged in");
 
   try {
     fs.unlinkSync(sessPath);
   } catch {
-    throw new Error('Unable to remove your session token');
+    throw Error('Unable to remove your session token');
   }
 
   clearCache();
@@ -75,13 +75,13 @@ function clearAll() {
     fs.rmSync(cacheDir, { recursive: true, force: true });
     console.log('✔️ All aoc-kit data cleared');
   } catch {
-    throw new Error('Unable to clear the cache');
+    throw Error('Unable to clear the cache');
   }
 }
 
 async function login() {
   if (!args[0] || args[0].length !== 128)
-    throw new Error('Invalid session token');
+    throw Error('Invalid session token');
 
   try {
     await axios({
@@ -92,7 +92,7 @@ async function login() {
       }
     });
   } catch {
-    throw new Error('Token validation failed');
+    throw Error('Token validation failed');
   }
 
 
@@ -100,7 +100,7 @@ async function login() {
     const configPath = path.join(cacheDir, 'session');
     fs.writeFileSync(configPath, args[0], 'utf-8');
   } catch {
-    throw new Error('Unable to save user configuration');
+    throw Error('Unable to save user configuration');
   }
 
   clearCache();
@@ -112,19 +112,19 @@ async function execute() {
   let srcFile = args.at(-1);
 
   if (!srcFile)
-    throw new Error('No solution module specified')
+    throw Error('No solution module specified')
 
   if (!path.isAbsolute(srcFile))
     srcFile = path.join(process.cwd(), srcFile);
 
   if (!fs.existsSync(srcFile))
-    throw new Error(`Unable to find file '${srcFile}'`)
+    throw Error(`Unable to find file '${srcFile}'`)
 
   let module, solution, srcConfig = {};
   try {
     module = (await import(`file://${srcFile}`)).default;
   } catch (err) {
-    throw new Error('Module import failed');
+    throw Error('Module import failed');
   }
 
   if (
@@ -135,12 +135,10 @@ async function execute() {
   } else if (typeof module === 'function') {
     solution = module;
   } else {
-    throw new Error('Invalid default export of the module');
+    throw Error('Invalid default export of the module');
   }
 
-  console.log('✔️ Solution module loaded');
   mergeObjInto(srcConfig, config);
-
   for (let i = 0; i < args.length - 1; i++) {
     switch (args[i]) {
       case '--input':
@@ -164,29 +162,29 @@ async function execute() {
         config.example = true;
         break;
       default:
-        throw new Error(`Unknown flag '${args[i]}'`);
+        throw Error(`Unknown flag '${args[i]}'`);
     }
   }
 
   if (cmd === 'submit') {
     if (config.input)
-      throw new Error('You cannot submit your solution while using a custom input file');
+      throw Error('You cannot submit your solution while using a custom input file');
 
     if (config.example)
-      throw new Error('You cannot submit your solution while using the example input');
+      throw Error('You cannot submit your solution while using the example input');
   }
 
   if (config.day === -1)
-    throw new Error('Day has not been specified');
+    throw Error('Day has not been specified');
 
   if (config.day < 1 || config.day > 25)
-    throw new Error(`Day ${config.day} is invalid`);
+    throw Error(`Day ${config.day} is invalid`);
 
   if (config.part === -1)
-    throw new Error('Part has not been specified');
+    throw Error('Part has not been specified');
 
   if (config.part < 1 || config.part > 2)
-    throw new Error(`Part ${config.part} is invalid`);
+    throw Error(`Part ${config.part} is invalid`);
 
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
   const year = now.getFullYear();
@@ -194,7 +192,7 @@ async function execute() {
   if (config.year === -1) config.year = latestYear;
 
   if (config.year < 2015 || config.year > latestYear)
-    throw new Error(`Year ${config.year} is not valid`);
+    throw Error(`Year ${config.year} is not valid`);
 
   let input: string;
   if (cmd === 'submit') {
@@ -208,10 +206,16 @@ async function execute() {
   }
 
   input = input.trim();
-  await solution(config.lines ? input.split('\n') : input, solve);
+  console.log('✔️ Solution module loaded');
+
+  try {
+    await solution(config.lines ? input.split('\n') : input, solve);
+  } catch (err) {
+    throw Error('An error occured within your module:', { cause: err });
+  }
 
   if (!submission.solved)
-    throw new Error('Your module has to call the solve() method');
+    throw Error('Your module has to call the solve() method');
 
   console.log(`▶️ Your answer: ${submission.value}`);
   if (cmd === 'submit') await submit(config);
@@ -236,7 +240,7 @@ async function submit(config: Config) {
 
     $ = cheerio.load(data);
   } catch {
-    throw new Error('Solution submission failed');
+    throw Error('Solution submission failed');
   }
 
   const resp = $('main > article > p').first().text().trim().toLowerCase();
@@ -271,13 +275,13 @@ function loadCustom(config: Config): string {
     inputPath = path.join(process.cwd(), inputPath);
 
   if (!fs.existsSync(inputPath))
-    throw new Error(`Input file '${config.input}' doesn't exist`);
+    throw Error(`Input file '${config.input}' doesn't exist`);
 
   let data: string;
   try {
     data = fs.readFileSync(inputPath, 'utf8');
   } catch {
-    throw new Error(`Unable to read file '${config.input}'`);
+    throw Error(`Unable to read file '${config.input}'`);
   }
 
   console.log(`✔️ Input (custom) loaded from file '${config.input}'`);
@@ -296,7 +300,7 @@ async function fetchExample(config: Config): Promise<string> {
     const { data } = await axios(`https://adventofcode.com/${config.year}/day/${config.day}`);
     $ = cheerio.load(data);
   } catch {
-    throw new Error(`Unable to load example for day ${config.day} of ${config.year}`);
+    throw Error(`Unable to load example for day ${config.day} of ${config.year}`);
   }
 
   const codeEl = $('pre > code').filter((_, el) => {
@@ -305,7 +309,7 @@ async function fetchExample(config: Config): Promise<string> {
   });
 
   if (codeEl.length !== 1)
-    throw new Error('Unable to locate example input on the page');
+    throw Error('Unable to locate example input on the page');
 
   const example = codeEl.first().text().trim();
   cache(example, config);
@@ -333,7 +337,7 @@ async function fetchInput(config: Config): Promise<string> {
     console.log('✔️ Input fetched from network');
     return data;
   } catch {
-    throw new Error(`Unable to load input for day ${config.day} of ${config.year}`);
+    throw Error(`Unable to load input for day ${config.day} of ${config.year}`);
   }
 }
 
@@ -367,10 +371,10 @@ function solve(output: string | number) {
     output = `${output}`;
 
   if (typeof output !== 'string')
-    throw new Error(`Output of type '${typeof output}' is not a valid solution`);
+    throw Error(`Output of type '${typeof output}' is not a valid solution`);
 
   if (submission.solved)
-    throw new Error('Cannot call the solve() method multiple times');
+    throw Error('Cannot call the solve() method multiple times');
 
   submission.value = output;
   submission.solved = true;
@@ -388,7 +392,7 @@ function getSessionToken() {
   }
 
   if (token === null)
-    throw new Error(`You don't seem to be logged in\n(Run 'aoc-kit login [session_token]' to log in)`);
+    throw Error(`You don't seem to be logged in\n(Run 'aoc-kit login [session_token]' to log in)`);
 
   return token;
 }
@@ -399,7 +403,7 @@ function mergeObjInto(src: any, dest: any) {
     if (typeof src[key] === typeof dest[key]) {
       dest[key] = src[key];
     } else {
-      throw new Error(`Invalid value of property '${key}': ${src[key]}`);
+      throw Error(`Invalid value of property '${key}': ${src[key]}`);
     }
   }
 }
@@ -407,7 +411,7 @@ function mergeObjInto(src: any, dest: any) {
 function parseNumericArg(flag: string, arg: string | undefined): number {
   const num = Number(arg);
   if (Number.isNaN(num))
-    throw new Error(`Invalid argument value for flag '${flag}'`);
+    throw Error(`Invalid argument value for flag '${flag}'`);
 
   return num;
 }
