@@ -67,13 +67,13 @@ function logout() {
   }
 
   clearCache();
-  console.log('✔️  User successfully logged out');
+  console.log('✔️ User successfully logged out');
 }
 
 function clearAll() {
   try {
     fs.rmSync(cacheDir, { recursive: true, force: true });
-    console.log('✔️  All aocli data cleared');
+    console.log('✔️ All aocli data cleared');
   } catch {
     throw new Error('Unable to clear the cache');
   }
@@ -104,7 +104,7 @@ async function login() {
   }
 
   clearCache();
-  console.log('✔️  User successfully logged in');
+  console.log('✔️ User successfully logged in');
 }
 
 async function execute() {
@@ -138,7 +138,9 @@ async function execute() {
     throw new Error('Invalid default export of the module');
   }
 
+  console.log('✔️ Solution module loaded');
   mergeObjInto(srcConfig, config);
+
   for (let i = 0; i < args.length - 1; i++) {
     switch (args[i]) {
       case '--input':
@@ -211,8 +213,7 @@ async function execute() {
   if (!submission.solved)
     throw new Error('Your module has to call the solve() method');
 
-  console.log('✔️  Solution module successfully executed')
-  console.log(`▶️  Your answer: ${submission.value}`);
+  console.log(`▶️ Your answer: ${submission.value}`);
   if (cmd === 'submit') await submit(config);
 }
 
@@ -240,19 +241,19 @@ async function submit(config: Config) {
 
   const resp = $('main > article > p').first().text().trim().toLowerCase();
   if (resp.includes('one gold star closer')) {
-    console.log('✔️  Solution successfully submitted');
-    console.log('✔️  Your answer was CORRECT\n');
-    console.log(`🎉 PART ${config.part} OF DAY ${config.day} OF ${config.year} COMPLETED 🎉`);
+    console.log('✔️ Solution successfully submitted');
+    console.log('✔️ Your answer was CORRECT\n');
+    console.log(`🎉 DAY ${config.day} (Part ${config.part}) OF ${config.year} COMPLETED 🎉`);
   } else if (resp.includes('already complete it')) {
     console.log("❌ Either you have already completed this task or you haven't unlocked it yet");
   } else if (resp.includes('too low')) {
-    console.log('✔️  Solution successfully submitted');
+    console.log('✔️ Solution successfully submitted');
     console.log('❌ Your answer was INCORRECT (too low)');
   } else if (resp.includes('too high')) {
-    console.log('✔️  Solution successfully submitted');
+    console.log('✔️ Solution successfully submitted');
     console.log('❌ Your answer was INCORRECT (too high)');
   } else if (resp.includes('not the right answer')) {
-    console.log('✔️  Solution successfully submitted');
+    console.log('✔️ Solution successfully submitted');
     console.log('❌ Your answer was INCORRECT');
   } else if (resp.includes('answer too recently')) {
     console.log('❌ You submitted an answer too recently');
@@ -279,14 +280,14 @@ function loadCustom(config: Config): string {
     throw new Error(`Unable to read file '${config.input}'`);
   }
 
-  console.log(`✔️  Input (custom) loaded from file '${config.input}'`);
+  console.log(`✔️ Input (custom) loaded from file '${config.input}'`);
   return data;
 }
 
 async function fetchExample(config: Config): Promise<string> {
   const cached = checkCache(config);
   if (cached) {
-    console.log('✔️  Input (example) loaded from cache');
+    console.log('✔️ Input (example) loaded from cache');
     return cached;
   }
 
@@ -309,14 +310,14 @@ async function fetchExample(config: Config): Promise<string> {
   const example = codeEl.first().text().trim();
   cache(example, config);
 
-  console.log('✔️  Input (example) fetched from network');
+  console.log('✔️ Input (example) fetched from network');
   return example;
 }
 
 async function fetchInput(config: Config): Promise<string> {
   const cached = checkCache(config);
   if (cached) {
-    console.log('✔️  Input loaded from cache');
+    console.log('✔️ Input loaded from cache');
     return cached;
   }
 
@@ -329,7 +330,7 @@ async function fetchInput(config: Config): Promise<string> {
     });
 
     cache(data, config);
-    console.log('✔️  Input fetched from network');
+    console.log('✔️ Input fetched from network');
     return data;
   } catch {
     throw new Error(`Unable to load input for day ${config.day} of ${config.year}`);
