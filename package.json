@@ -1,9 +1,28 @@
 {
   "name": "aoc-kit",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "license": "MIT",
+  "author": "Fry",
+  "description": "Advent to Code tooling for Node",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fry98/aoc-kit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Fry98/aoc-kit/issues"
+  },
+  "keywords": [
+    "advent of code",
+    "aoc",
+    "kit",
+    "advent",
+    "code",
+    "cli"
+  ],
+  "homepage": "https://github.com/Fry98/aoc-kit#readme",
   "bin": {
     "aoc-kit": "dist/bin/aoc-kit.js"
   },
