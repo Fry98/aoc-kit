@@ -7,4 +7,5 @@ export interface Config {
   lines: boolean;
   mode: 'text' | 'lines' | 'numbers';
   input: string | null;
+  isPart1: boolean;
 }

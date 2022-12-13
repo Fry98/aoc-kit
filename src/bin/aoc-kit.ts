@@ -117,7 +117,8 @@ async function execute() {
     input: '',
     mode: 'text',
     lines: false,
-    example: false
+    example: false,
+    isPart1: false
   };
 
   if (!srcFile)
@@ -233,6 +234,7 @@ async function execute() {
 
   try {
     if (config.input?.length === 0) config.input = null;
+    config.isPart1 = config.part === 1;
 
     let processed: any = input;
     config.lines = false;
@@ -417,7 +419,6 @@ function solve(output: string | number) {
 }
 
 function getSessionToken() {
-
   let token: string | null = null;
   const configPath = path.join(cacheDir, 'session');
 
