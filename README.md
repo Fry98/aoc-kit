@@ -41,11 +41,11 @@ Let's start off by focusing on the second argument of our `defineSolution()` met
 
 | property | type | description |
 | --- | --- | --- |
-| **lines** | boolean | If set to true, the input passed to our program is going to be automatically split by lines. This changes the type of input from `string` to `string[]`. Defaults to `false`. |
-| **example** | boolean | If set to true, the program isn't going to use our actual input for the given task but the example given on the AoC website instead. This is useful for development and debugging and does not required account authentication. It's not possible to submit an answer while using the example input. Defaults to `false`. |
-| **year** | number | The year of **AoC** we're writing a solution for. Defaults to whatever is currently the latest year of **AoC**. |
-| **day** | number | The day of **AoC** we're writing a solution for. Accepts values from `1` to `25`. |
-| **part** | number | Part of the specified day of **AoC** we're writing a solution for. Accepts values `1` or `2`. |
+| **mode** | `'text' \| 'lines' \| 'numbers'`| Sets up how the input is pre-processed before being passed to your solution. In `text` mode, it is passed directly as a `string`. In `lines` mode, the content gets split by lines and passed in the form of a `string[]`. `numbers` mode works similarly to `lines` mode but each line also gets automatically converted into a number. In this case, the input is of type `number[]`. |
+| **example** | `boolean` | If set to true, the program isn't going to use your actual input for the given task but the example given on the AoC website instead. This is useful for development and debugging and does not required account authentication. It's not possible to submit an answer while using the example input. Defaults to `false`. |
+| **year** | `number` | The year of **AoC** we're writing a solution for. Defaults to whatever is currently the latest year of **AoC**. |
+| **day** | `number` | The day of **AoC** we're writing a solution for. Accepts values from `1` to `25`. |
+| **part** | `number` | Part of the specified day of **AoC** we're writing a solution for. Accepts values `1` or `2`. |
 
 Most of these properties can also be set in the form of a CLI argument, instead of making them part of the JS code *(more in the **CLI Options** section)*. If the same property is set in both places, the CLI argument serves as an override.
 
@@ -73,7 +73,7 @@ CLI flags for the `aoc-kit run` and `aoc-kit submit` comnmands:
 | `‑‑day`, `‑d` | number | Override for the `day` property of the configuration object *(more in the **Usage** section)* |
 | `‑‑part`, `‑p` | number | Override for the `part` property of the configuration object *(more in the **Usage** section)* |
 | `‑‑example`, `‑e` | *‑none‑* | Override for the `example` property of the configuration object *(more in the **Usage** section)*. This flag doesn't take an argument. It's presence sets the `example` property to `true`. This flag cannot be used with `aoc‑kit submit`. |
-| `‑‑input`, `‑i` | filepath | When this flag is set, the CLI loads input for the task from a specified file (path relative to the working directory of your terminal). This flag cannot be used with `aoc‑kit submit`. When this flag is set, the `example` property is ignored. |
+| `‑‑input`, `‑i` | filepath | When this flag is set, the CLI loads input for the task from a specified file (path relative to the working directory of your terminal). This flag cannot be used with `aoc‑kit submit`. When this flag is set, the `example` property is ignored and the `day` and `part` properties don't have to be set. |
 
 ## Example
 `main.js`**:**
@@ -89,15 +89,15 @@ export default defineSolution((input, solve) => {
 ```
 
 **Terminal:**
-<pre><code><span style='color: #e0e0e0'>$</span> aoc-kit submit -y 1984 -d 3 -p 1 main.js
-<span style='color: #A5E075'>√</span> Input fetched from network
-<span style='color: #A5E075'>√</span> Solution module loaded
-<span style='color: #4DC4FF'>►</span> Your answer: 4726
+<pre><code><strong>$</strong> aoc-kit submit -y 1984 -d 3 -p 1 main.js
+√ Input fetched from network
+√ Solution module loaded
+► Your answer: 4726
 ------------------------------------------
-<span style='color: #A5E075'>√</span> Solution successfully submitted
-<span style='color: #A5E075'>√</span> Your answer was CORRECT
+√ Solution successfully submitted
+√ Your answer was CORRECT
 
-<span style='color: #F0A45D'>✶</span> DAY 3 (Part 1) OF 1984 COMPLETED <span style='color: #F0A45D'>✶</span>
+✶ DAY 3 (Part 1) OF 1984 COMPLETED ✶
 </code></pre>
 
 ## License

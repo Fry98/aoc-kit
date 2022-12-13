@@ -239,7 +239,7 @@ async function execute() {
       config.lines = true;
 
       if (config.mode === 'numbers')
-        processed = processed.map((x: string) => Number.parseInt(x));
+        processed = processed.map((x: string) => Number(x));
     }
 
     await solution(processed, solve, config);
