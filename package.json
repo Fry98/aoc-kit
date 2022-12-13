@@ -28,7 +28,8 @@
   },
   "scripts": {
     "prepare": "tsc",
-    "build": "tsc"
+    "build": "tsc",
+    "example": "npx aoc-kit run -i example/input.txt example/main.js"
   },
   "devDependencies": {
     "@types/cheerio": "^0.22.31",

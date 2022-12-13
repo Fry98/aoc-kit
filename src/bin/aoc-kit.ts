@@ -108,8 +108,16 @@ async function login() {
 }
 
 async function execute() {
-  let config: Config = { year: -1, day: -1, part: -1, input: '', lines: false, example: false };
   let srcFile = args.at(-1);
+  let config: Config = {
+    year: -1,
+    day: -1,
+    part: -1,
+    input: '',
+    mode: 'text',
+    lines: false,
+    example: false
+  };
 
   if (!srcFile)
     throw Error('No solution module specified')
@@ -123,7 +131,7 @@ async function execute() {
   let module, solution, srcConfig = {};
   try {
     module = (await import(`file://${srcFile}`)).default;
-  } catch (err) {
+  } catch {
     throw Error('Module import failed');
   }
 
@@ -168,31 +176,43 @@ async function execute() {
 
   if (cmd === 'submit') {
     if (config.input)
-      throw Error('You cannot submit your solution while using a custom input file');
+      throw Error('You cannot submit your answer while using a custom input file');
 
     if (config.example)
-      throw Error('You cannot submit your solution while using the example input');
+      throw Error('You cannot submit your answer while using the example input');
   }
 
-  if (config.day === -1)
-    throw Error('Day has not been specified');
+  if (config.input!.length < 1) {
+    if (config.day === -1)
+      throw Error('Day has not been specified');
 
-  if (config.day < 1 || config.day > 25)
-    throw Error(`Day ${config.day} is invalid`);
+    if (config.day < 1 || config.day > 25)
+      throw Error(`Day ${config.day} is invalid`);
 
-  if (config.part === -1)
-    throw Error('Part has not been specified');
+    if (config.part === -1)
+      throw Error('Part has not been specified');
 
-  if (config.part < 1 || config.part > 2)
-    throw Error(`Part ${config.part} is invalid`);
+    if (config.part < 1 || config.part > 2)
+      throw Error(`Part ${config.part} is invalid`);
 
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const year = now.getFullYear();
-  const latestYear = now.getMonth() < 11 ? year - 1 : year;
-  if (config.year === -1) config.year = latestYear;
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const year = now.getFullYear();
+    const latestYear = now.getMonth() < 11 ? year - 1 : year;
+    if (config.year === -1) config.year = latestYear;
 
-  if (config.year < 2015 || config.year > latestYear)
-    throw Error(`Year ${config.year} is not valid`);
+    if (config.year < 2015 || config.year > latestYear)
+      throw Error(`Year ${config.year} is not valid`);
+  }
+
+  if (!Object.hasOwn(srcConfig, 'mode') && config.lines) {
+    config.mode = 'lines';
+  }
+
+  if (
+    config.mode !== 'lines' &&
+    config.mode !== 'numbers' &&
+    config.mode !== 'text'
+  ) throw Error(`Unknown value '${config.mode}' of property 'mode'`);
 
   let input: string;
   if (cmd === 'submit') {
@@ -210,7 +230,19 @@ async function execute() {
 
   try {
     if (config.input?.length === 0) config.input = null;
-    await solution(config.lines ? input.split('\n') : input, solve, config);
+
+    let processed: any = input;
+    config.lines = false;
+
+    if (config.mode !== 'text') {
+      processed = input.split('\n');
+      config.lines = true;
+
+      if (config.mode === 'numbers')
+        processed = processed.map((x: string) => Number.parseInt(x));
+    }
+
+    await solution(processed, solve, config);
   } catch (err) {
     throw Error('An error occured within your module:', { cause: err });
   }
@@ -241,24 +273,24 @@ async function submit(config: Config) {
 
     $ = cheerio.load(data);
   } catch {
-    throw Error('Solution submission failed');
+    throw Error('Answer submission failed');
   }
 
   const resp = $('main > article > p').first().text().trim().toLowerCase();
   if (resp.includes('one gold star closer')) {
-    console.log(emTick, 'Solution successfully submitted');
+    console.log(emTick, 'Answer successfully submitted');
     console.log(emTick, 'Your answer was CORRECT\n');
     console.log(emStar, `DAY ${config.day} (Part ${config.part}) OF ${config.year} COMPLETED`, emStar);
   } else if (resp.includes('already complete it')) {
     console.log(emX, "Either you have already completed this task or you haven't unlocked it yet");
   } else if (resp.includes('too low')) {
-    console.log(emTick, 'Solution successfully submitted');
+    console.log(emTick, 'Answer successfully submitted');
     console.log(emX, 'Your answer was INCORRECT (too low)');
   } else if (resp.includes('too high')) {
-    console.log(emTick, 'Solution successfully submitted');
+    console.log(emTick, 'Answer successfully submitted');
     console.log(emX, 'Your answer was INCORRECT (too high)');
   } else if (resp.includes('not the right answer')) {
-    console.log(emTick, 'Solution successfully submitted');
+    console.log(emTick, 'Answer successfully submitted');
     console.log(emX, 'Your answer was INCORRECT');
   } else if (resp.includes('answer too recently')) {
     console.log(emX, 'You submitted an answer too recently');
@@ -372,7 +404,7 @@ function solve(output: string | number) {
     output = `${output}`;
 
   if (typeof output !== 'string')
-    throw Error(`Output of type '${typeof output}' is not a valid solution`);
+    throw Error(`Output of type '${typeof output}' is not a valid answer`);
 
   if (submission.solved)
     throw Error('Cannot call the solve() method multiple times');
