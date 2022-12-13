@@ -21,11 +21,12 @@ if (!fs.existsSync(cacheDir)) {
   fs.mkdirSync(cacheDir);
 }
 
-const [emX, emTick, emArr, emStar] = [
+const [emX, emTick, emArr, emStar, emWarn] = [
   pc.bold(pc.red('X')),
   pc.bold(pc.green('√')),
   pc.bold(pc.blue('►')),
-  pc.bold(pc.yellow('✶'))
+  pc.bold(pc.yellow('✶')),
+  pc.bgYellow(pc.bold(pc.white('!')))
 ];
 
 const [,, cmd, ...args] = process.argv;
@@ -204,9 +205,11 @@ async function execute() {
       throw Error(`Year ${config.year} is not valid`);
   }
 
-  if (!Object.hasOwn(srcConfig, 'mode') && config.lines) {
+  if (Object.hasOwn(srcConfig, 'lines'))
+    console.error(emWarn, "'lines' property is deprecated. Consider using 'mode' instead.");
+
+  if (!Object.hasOwn(srcConfig, 'mode') && config.lines)
     config.mode = 'lines';
-  }
 
   if (
     config.mode !== 'lines' &&

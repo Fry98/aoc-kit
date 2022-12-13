@@ -80,7 +80,7 @@ CLI flags for the `aoc-kit run` and `aoc-kit submit` comnmands:
 ```js
 import { defineSolution } from 'aoc-kit';
 
-// Sums up all the numbers in the input
+// Sums up all numbers in the input
 export default defineSolution((input, solve) => {
   const nums = input.map(x => Number(x));
   const sum = nums.reduce((acc, x) => x + acc, 0);
