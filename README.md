@@ -67,6 +67,7 @@ The last argument is an object named `config`. This object contains the entire c
 &nbsp;
 
 CLI flags for the `aoc-kit run` and `aoc-kit submit` comnmands:
+
 | Flag | Argument | Description |
 | --- | --- | --- |
 | `‑‑year`, `‑y` | number | Override for the `year` property of the configuration object *(more in the **Usage** section)* |
