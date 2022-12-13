@@ -85,7 +85,7 @@ export default defineSolution((input, solve) => {
   const nums = input.map(x => Number(x));
   const sum = nums.reduce((acc, x) => x + acc, 0);
   solve(sum);
-}, { lines: true });
+}, { mode: 'lines' });
 ```
 
 **Terminal:**
