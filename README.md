@@ -42,7 +42,7 @@ Let's start off by focusing on the second argument of our `defineSolution()` met
 | property | type | description |
 | --- | --- | --- |
 | **mode** | `'text' \| 'lines' \| 'numbers'`| Sets up how the input is pre-processed before being passed to your solution. In `text` mode, it is passed directly as a `string`. In `lines` mode, the content gets split by lines and passed in the form of a `string[]`. `numbers` mode works similarly to `lines` mode but each line also gets automatically converted into a number. In this case, the input is of type `number[]`. |
-| **example** | `boolean` | If set to true, the program isn't going to use your actual input for the given task but the example given on the AoC website instead. This is useful for development and debugging and does not required account authentication. It's not possible to submit an answer while using the example input. Defaults to `false`. |
+| **example** | `boolean` | If set to true, the program isn't going to use your actual input for the given task but the example given on the AoC website instead. This is useful for development and debugging and does not require account authentication. It's not possible to submit an answer while using the example input. Defaults to `false`. |
 | **year** | `number` | The year of **AoC** we're writing a solution for. Defaults to whatever is currently the latest year of **AoC**. |
 | **day** | `number` | The day of **AoC** we're writing a solution for. Accepts values from `1` to `25`. |
 | **part** | `number` | Part of the specified day of **AoC** we're writing a solution for. Accepts values `1` or `2`. |
